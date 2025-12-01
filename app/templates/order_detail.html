@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Detalle del Pedido #{{ order.order_id }} - TechStore</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+
+<body>
+    <nav class="navbar navbar-expand-lg">
+        <div class="container">
+            <a class="navbar-brand" href="/">TechStore</a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav ms-auto">
+                    <li class="nav-item"><a class="nav-link" href="/">🏠 Inicio</a></li>
+                    <li class="nav-item"><a class="nav-link active" href="/orders">📦 Mis Pedidos</a></li>
+                    <li class="nav-item">
+                        <span class="nav-link user-badge">👤 {{ current_user.username }}</span>
+                    </li>
+                    <li class="nav-item"><a class="nav-link" href="/logout">🚪 Salir</a></li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container">
+        {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+        {% for category, message in messages %}
+        <div class="alert alert-{{ category if category != 'danger' else 'danger' }} alert-dismissible fade show">
+            <strong>{{ message }}</strong>
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+        {% endfor %}
+        {% endif %}
+        {% endwith %}
+
+        <div class="page-header">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <h2>Pedido #{{ order.order_id }}</h2>
+                    <p>Fecha: {{ order.created_at.strftime('%d/%m/%Y %H:%M') if order.created_at else 'N/A' }}</p>
+                </div>
+                <div>
+                    <span class="status-badge status-{{ order.status }} large">
+                        {% if order.status == 'pending' %}
+                        ⏳ Pendiente
+                        {% elif order.status == 'paid' %}
+                        ✓ Pagado
+                        {% elif order.status == 'shipped' %}
+                        🚚 Enviado
+                        {% elif order.status == 'cancelled' %}
+                        ✗ Cancelado
+                        {% else %}
+                        {{ order.status }}
+                        {% endif %}
+                    </span>
+                </div>
+            </div>
+        </div>
+
+        <div class="row">
+            <div class="col-lg-8">
+                <div class="order-detail-card">
+                    <h3>Artículos del Pedido</h3>
+                    <div class="order-items-list">
+                        {% for item in order.order_items %}
+                        <div class="order-item">
+                            <div class="order-item-info">
+                                <h4>{{ item.product_name }}</h4>
+                                <p class="text-muted">{{ item.product_category }}</p>
+                            </div>
+                            <div class="order-item-details">
+                                <div class="order-item-quantity">
+                                    <span>Cantidad: <strong>{{ item.quantity }}</strong></span>
+                                </div>
+                                <div class="order-item-price">
+                                    <span>Precio unitario: <strong>${{ "%.2f"|format(item.unit_price) }}</strong></span>
+                                </div>
+                                <div class="order-item-total">
+                                    <span>Subtotal: <strong>${{ "%.2f"|format(item.quantity * item.unit_price)
+                                            }}</strong></span>
+                                </div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-lg-4">
+                <div class="order-summary-card">
+                    <h3>Resumen</h3>
+                    <div class="summary-row">
+                        <span>Total:</span>
+                        <strong class="total-amount">${{ "%.2f"|format(order.total_amount) }}</strong>
+                    </div>
+                    <div class="summary-row">
+                        <span>Estado:</span>
+                        <span class="status-badge status-{{ order.status }}">
+                            {% if order.status == 'pending' %}
+                            Pendiente
+                            {% elif order.status == 'paid' %}
+                            Pagado
+                            {% elif order.status == 'shipped' %}
+                            Enviado
+                            {% elif order.status == 'cancelled' %}
+                            Cancelado
+                            {% endif %}
+                        </span>
+                    </div>
+
+                    <div class="order-actions">
+                        {% if order.status == 'pending' %}
+                        <form method="POST" action="/order/{{ order.order_id }}/pay" class="mb-2">
+                            <input type="hidden" name="payment_method" value="credit_card">
+                            <button type="submit" class="btn btn-success btn-block">💳 Pagar Pedido</button>
+                        </form>
+                        <form method="POST" action="/order/{{ order.order_id }}/cancel">
+                            <button type="submit" class="btn btn-danger btn-block"
+                                onclick="return confirm('¿Estás seguro de cancelar este pedido?')">
+                                ✗ Cancelar Pedido
+                            </button>
+                        </form>
+                        {% elif order.status == 'paid' %}
+                        <div class="alert alert-success">
+                            <strong>✓ Pedido pagado</strong><br>
+                            Tu pedido está siendo procesado
+                        </div>
+                        {% if current_user.role == 'admin' %}
+                        <form method="POST" action="/order/{{ order.order_id }}/ship">
+                            <button type="submit" class="btn btn-primary btn-block">🚚 Marcar como Enviado</button>
+                        </form>
+                        {% endif %}
+                        {% elif order.status == 'shipped' %}
+                        <div class="alert alert-info">
+                            <strong>🚚 Pedido enviado</strong><br>
+                            Tu pedido está en camino
+                        </div>
+                        {% elif order.status == 'cancelled' %}
+                        <div class="alert alert-secondary">
+                            <strong>✗ Pedido cancelado</strong><br>
+                            Este pedido fue cancelado
+                        </div>
+                        {% endif %}
+                    </div>
+
+                    <a href="/orders" class="btn btn-outline-primary btn-block mt-3">← Volver a Pedidos</a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <footer class="footer">
+        <div class="container">
+            <div class="footer-content">
+                <div class="footer-info">
+                    <div class="footer-section">
+                        <h4>Sistema</h4>
+                        <p>Gestión de Pedidos Segura</p>
+                    </div>
+                    <div class="footer-section">
+                        <h4>Plataforma</h4>
+                        <p>E-Commerce Avanzado</p>
+                    </div>
+                </div>
+                <div class="footer-section">
+                    <p>&copy; 2025 TechStore - Todos los derechos reservados</p>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+
+</html>

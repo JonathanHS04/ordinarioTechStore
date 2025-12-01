@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tienda Híbrida - E-Commerce Moderno</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+
+<body>
+    <nav class="navbar navbar-expand-lg">
+        <div class="container">
+            <a class="navbar-brand" href="/">TechStore</a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav ms-auto">
+                    <li class="nav-item"><a class="nav-link active" href="/">🏠 Inicio</a></li>
+                    <li class="nav-item"><a class="nav-link" href="/orders">📦 Mis Pedidos</a></li>
+                    <li class="nav-item">
+                        <span class="nav-link user-badge">👤 {{ current_user.username }}</span>
+                    </li>
+                    <li class="nav-item"><a class="nav-link" href="/logout">🚪 Salir</a></li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container">
+        {% with messages = get_flashed_messages() %}
+        {% if messages %}
+        {% for message in messages %}
+        <div
+            class="alert {% if 'exitosamente' in message or 'éxito' in message %}alert-success{% else %}alert-info{% endif %}">
+            <strong>{{ message }}</strong>
+        </div>
+        {% endfor %}
+        {% endif %}
+        {% endwith %}
+
+        <div class="page-header">
+            <h2>Catálogo de Productos</h2>
+            <p>Descubre nuestra selección premium de tecnología y accesorios</p>
+        </div>
+
+        {% if products_by_category %}
+        {% for category, products in products_by_category.items() %}
+        <div class="category-section mb-5">
+            <h3 class="category-title mb-4 pb-2 border-bottom">{{ category }}</h3>
+            <div class="row g-4">
+                {% for product in products %}
+                <div class="col-md-6 col-lg-4">
+                    <div class="product-card">
+                        <div class="product-image">
+                            {% if product.category == 'Electronics' %}
+                            💻
+                            {% elif product.category == 'Clothing' %}
+                            👕
+                            {% elif product.category == 'Home' %}
+                            🏠
+                            {% elif product.category == 'Books' %}
+                            📚
+                            {% elif product.category == 'Sports' %}
+                            ⚽
+                            {% else %}
+                            📦
+                            {% endif %}
+                        </div>
+                        <div class="product-body">
+                            <span class="product-category">{{ product.category }}</span>
+                            <h3 class="product-title">{{ product.name }}</h3>
+                            <div class="product-price">${{ "%.2f"|format(product.price) }}</div>
+                            <div class="product-stock {% if product.stock < 10 %}low-stock{% endif %}">
+                                {% if product.stock > 0 %}
+                                ✓ {{ product.stock }} disponibles
+                                {% else %}
+                                ✗ Agotado
+                                {% endif %}
+                            </div>
+
+                            {% if product.attributes %}
+                            <div class="product-attributes">
+                                {% for key, value in product.attributes.items() %}
+                                <div><strong>{{ key|title }}:</strong>
+                                    {% if value|safe_iterable %}
+                                    {{ value|join(', ') }}
+                                    {% else %}
+                                    {{ value }}
+                                    {% endif %}
+                                </div>
+                                {% endfor %}
+                            </div>
+                            {% endif %}
+
+                            <div class="product-footer">
+                                <form action="/buy/{{ product._id }}" method="POST">
+                                    <input type="hidden" name="price" value="{{ product.price }}">
+                                    <div class="input-group">
+                                        <input type="number" name="quantity" class="form-control quantity-input"
+                                            value="1" min="1" max="{{ product.stock }}" {% if product.stock==0
+                                            %}disabled{% endif %}>
+                                        <button class="btn btn-buy" type="submit" {% if product.stock==0 %}disabled{%
+                                            endif %}>
+                                            {% if product.stock > 0 %}
+                                            🛒 Comprar
+                                            {% else %}
+                                            Agotado
+                                            {% endif %}
+                                        </button>
+                                    </div>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+        {% endfor %}
+        {% else %}
+        <div class="row">
+            <div class="col-12">
+                <div class="empty-state">
+                    <div class="empty-state-icon">📦</div>
+                    <h3>No hay productos disponibles</h3>
+                    <p>Vuelve pronto para ver nuestras novedades</p>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+
+    <footer class="footer">
+        <div class="container">
+            <div class="footer-content">
+                <div class="footer-info">
+                    <div class="footer-section">
+                        <h4>Catálogo</h4>
+                        <p>Productos de Alta Calidad</p>
+                    </div>
+                    <div class="footer-section">
+                        <h4>Plataforma</h4>
+                        <p>E-Commerce Avanzado</p>
+                    </div>
+                </div>
+                <div class="footer-section">
+                    <p>&copy; 2025 TechStore - Todos los derechos reservados</p>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+
+</html>
