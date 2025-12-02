@@ -1,0 +1,1 @@
+{"options":{"capped":true,"size":{"$numberInt":"5242880"},"max":{"$numberInt":"5000"}},"indexes":[{"v":{"$numberInt":"2"},"key":{"_id":{"$numberInt":"1"}},"name":"_id_"}],"uuid":"c62154e60c554b53b50a350c893a5b12","collectionName":"audit_logs","type":"collection"}
